@@ -1,0 +1,35 @@
+Ссылка сразу откроет создание файла в нужной папке и с правильным именем).
+
+Шаг 2. Вставьте код
+В большое черное поле для текста вставьте этот скрипт:
+
+YAML
+name: Build iOS IPA
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install XcodeGen
+        run: brew install xcodegen
+
+      - name: Generate and Build
+        working-directory: Mobile/IOS
+        run: |
+          xcodegen generate
+          xcodebuild -project LaLune.xcodeproj -scheme LaLune -configuration Release -destination 'generic/platform=iOS' -derivedDataPath build CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO build
+          mkdir -p build/Payload
+          cp -r build/Build/Products/Release-iphoneos/LaLune.app build/Payload/
+          cd build
+          zip -r LaLune-unsigned.ipa Payload
+
+      - name: Save IPA
+        uses: actions/upload-artifact@v4
+        with:
+          name: LaLune-unsigned-ipa
+          path: Mobile/IOS/build/LaLune-unsigned.ipa
